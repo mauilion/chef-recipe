@@ -44,12 +44,6 @@ template "/etc/sysconfig/qpidd" do
    mode  "0644"
 end
 
-template "/var/chef-solo/node-qpid-cluster.json" do
-   action :create
-   owner "root"
-   group "root"
-   mode  "0644"
-end
 
 script "corosync_auto_start_and_start_process" do
   interpreter "bash"
