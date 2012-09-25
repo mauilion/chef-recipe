@@ -24,3 +24,16 @@ template "/etc/yum.repos.d/EPEL.repo" do
    mode  "0644"
 end
 
+%w{openstack-nova.noarch openstack-swift-account openstack-swift-container openstack-swift-object openstack-swift-proxy openstack-dashboard openstack-glance openstack-keystone openstack-nova-novncproxy qpid-cpp-server qpid-tools mysql-server xinetd rsync memcached python-django-horizon python-keystoneclient python-novaclient.noarch}.each do |package_name|
+  package package_name do
+    action :install
+  end
+end
+
+%w{/etc/libvirt/qemu/networks/default.xml /etc/libvirt/qemu/networks/autostart/default.xml}.each do |file_name|
+  file file_name do
+    action :delete
+  end
+end
+
+
