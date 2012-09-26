@@ -25,15 +25,17 @@ template "/etc/yum.repos.d/EPEL.repo" do
 end
 
 %w{openstack-nova openstack-swift-account openstack-swift-container openstack-swift-object openstack-swift-proxy openstack-dashboard openstack-glance openstack-keystone openstack-nova-novncproxy qpid-cpp-server qpid-tools mysql-server xinetd rsync memcached python-django-horizon python-keystoneclient python-novaclient}.each do |package_name|
-  package package_name do
-    action :install
-  end
+   package package_name do
+     action :install
+   end
 end
 
-%w{/etc/libvirt/qemu/networks/default.xml /etc/libvirt/qemu/networks/autostart/default.xml}.each do |file_name|
-  file file_name do
-    action :delete
-  end
+file "/etc/libvirt/qemu/networks/default.xml" do
+   action :delete
+end
+
+link "/etc/libvirt/qemu/networks/autostart/default.xml" do
+   action :delete
 end
 
 
