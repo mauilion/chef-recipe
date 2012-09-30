@@ -1,0 +1,42 @@
+# config for TemplatedCatalog, using camelCase because I don't want to do
+# translations for keystone compat
+catalog.RegionOne.identity.publicURL = http://<%=   node[:keystone][:identity_api_address][:publicURL]    %>:$(public_port)s/v2.0
+catalog.RegionOne.identity.adminURL = http://<%=    node[:keystone][:identity_api_address][:adminURL]     %>:$(admin_port)s/v2.0
+catalog.RegionOne.identity.internalURL = http://<%= node[:keystone][:identity_api_address][:internalURL]  %>:$(public_port)s/v2.0
+catalog.RegionOne.identity.name = Identity Service
+
+# fake compute service for now to help novaclient tests work
+catalog.RegionOne.compute.publicURL = http://<%=   node[:keystone][:comupte_api_address][:publicURL]    %>:$(compute_port)s/v1.1/$(tenant_id)s
+catalog.RegionOne.compute.adminURL = http://<%=    node[:keystone][:comupte_api_address][:adminURL]     %>:$(compute_port)s/v1.1/$(tenant_id)s
+catalog.RegionOne.compute.internalURL = http://<%= node[:keystone][:comupte_api_address][:internalURL]  %>:$(compute_port)s/v1.1/$(tenant_id)s
+catalog.RegionOne.compute.name = Compute Service
+
+# cinder
+catalog.RegionOne.volume.publicURL = http://<%=   node[:keystone][:cinder_api_address][:publicURL]    %>:8776/v1/$(tenant_id)s
+catalog.RegionOne.volume.adminURL = http://<%=    node[:keystone][:cinder_api_address][:adminURL]     %>:8776/v1/$(tenant_id)s
+catalog.RegionOne.volume.internalURL = http://<%= node[:keystone][:cinder_api_address][:internalURL]  %>:8776/v1/$(tenant_id)s
+catalog.RegionOne.volume.name = Volume Service
+
+# compute api for EC2
+catalog.RegionOne.ec2.publicURL = http://<%=   node[:keystone][:ec2_api_address][:publicURL]    %>:8773/services/Cloud
+catalog.RegionOne.ec2.adminURL = http://<%=    node[:keystone][:ec2_api_address][:adminURL]     %>:8773/services/Admin
+catalog.RegionOne.ec2.internalURL = http://<%= node[:keystone][:ec2_api_address][:internalURL]  %>:8773/services/Cloud
+catalog.RegionOne.ec2.name = EC2 Service
+
+# glance
+catalog.RegionOne.image.publicURL = http://<%=   node[:keystone][:glance_api_address][:publicURL]    %>:9292/v1
+catalog.RegionOne.image.adminURL = http://<%=    node[:keystone][:glance_api_address][:adminURL]     %>:9292/v1
+catalog.RegionOne.image.internalURL = http://<%= node[:keystone][:glance_api_address][:internalURL]  %>:9292/v1
+catalog.RegionOne.image.name = Image Service
+
+# swift
+catalog.RegionOne.object-store.publicURL = http://<%=   node[:keystone][:swift_api_address][:publicURL]     %>:<%= node[:keystone][:swift_api_address][:port] %>/v1/AUTH_$(tenant_id)s
+catalog.RegionOne.object-store.adminURL = http://<%=    node[:keystone][:swift_api_address][:adminURL]      %>:<%= node[:keystone][:swift_api_address][:port] %>/
+catalog.RegionOne.object-store.internalURL = http://<%= node[:keystone][:swift_api_address][:internalURL]   %>:<%= node[:keystone][:swift_api_address][:port] %>/v1/AUTH_$(tenant_id)s
+catalog.RegionOne.object-store.name = Swift Service
+
+# quantum
+catalog.RegionOne.network.publicURL = http://<%=   node[:keystone][:quantum_api_address][:publicURL]    %>:9696/
+catalog.RegionOne.network.adminURL = http://<%=    node[:keystone][:quantum_api_address][:adminURL]     %>:9696/
+catalog.RegionOne.network.internalURL = http://<%= node[:keystone][:quantum_api_address][:internalURL]  %>:9696/
+catalog.RegionOne.network.name = Quantum Service
