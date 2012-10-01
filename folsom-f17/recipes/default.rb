@@ -61,6 +61,12 @@ end
 #                          keystone
 # _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 
+# install keystone
+package "openstack-keystone" do
+  action :install
+end
+
+
 # create mysql's schema for openstack
 script "create_mysql_schema_for_keystone" do
   DONE_FLAG_FILE="init.script.db_user_add.done"
@@ -74,11 +80,6 @@ script "create_mysql_schema_for_keystone" do
      mysql -uroot -e"create database keystone;"
      touch /etc/keystone/#{DONE_FLAG_FILE}
   EOH
-end
-
-# install keystone
-package "openstack-keystone" do
-  action :install
 end
 
 # put keystone's config files
@@ -306,3 +307,168 @@ end
     action [:enable, :start]
   end
 end
+
+
+# _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+#                            glance
+# _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+
+# install glance
+package "openstack-glance" do
+  action :install
+end
+
+# create mysql's schema for glance
+script "create_mysql_schema_for_glance" do
+  DONE_FLAG_FILE="init.script.db_user_add.done"
+  interpreter "bash"
+  user "root"
+  cwd "/tmp"
+  # this file is flag. if the file exist, the following script dont run.
+  creates "/etc/glance/#{DONE_FLAG_FILE}"
+  code <<-EOH
+     mysql -uroot -e"grant all privileges on glance.* to glance@'#{node[:mysql][:access_network]}' identified by '#{node[:mysql][:pass][:glance]}';"
+     mysql -uroot -e"create database glance;"
+     touch /etc/glance/#{DONE_FLAG_FILE}
+  EOH
+end
+
+
+# put glance's config files
+template "/etc/glance/glance-api.conf" do
+  source "glance-api.conf.erb"
+  owner "glance"
+  group "glance"
+end
+
+template "/etc/glance/glance-api-paste.ini" do
+  source "glance-api-paste.ini.erb"
+  owner "glance"
+  group "glance"
+end
+
+
+# put glance's config files
+template "/etc/glance/glance-registry.conf" do
+  source "glance-registry.conf.erb"
+  owner "glance"
+  group "glance"
+end
+
+template "/etc/glance/glance-registry-paste.ini" do
+  source "glance-registry-paste.ini.erb"
+  owner "glance"
+  group "glance"
+end
+
+# db_initialize glance
+script "db_initialize_cinder" do
+  DONE_FLAG_FILE="init.script.db_sync.done"
+  interpreter "bash"
+  user "root"
+  cwd "/tmp"
+  # this file is flag. if the file exist, the following script dont run.
+  creates "/etc/glance/#{DONE_FLAG_FILE}"
+  code <<-EOH
+     glance-manage db_sync
+     touch /etc/glance/#{DONE_FLAG_FILE}
+  EOH
+end
+
+
+# enable & start glance
+%w{openstack-glance-api.service openstack-glance-api.service}.each do |service_name|
+  service service_name do
+    provider Chef::Provider::Service::Systemd
+    action [:enable, :start]
+  end
+end
+
+
+
+
+# _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+#                            cinder
+# _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+
+# install cinder
+package "openstack-cinder" do
+  action :install
+end
+
+# create mysql's schema for cinder
+script "create_mysql_schema_for_cinder" do
+  DONE_FLAG_FILE="init.script.db_user_add.done"
+  interpreter "bash"
+  user "root"
+  cwd "/tmp"
+  # this file is flag. if the file exist, the following script dont run.
+  creates "/etc/cinder/#{DONE_FLAG_FILE}"
+  code <<-EOH
+     mysql -uroot -e"grant all privileges on cinder.* to cinder@'#{node[:mysql][:access_network]}' identified by '#{node[:mysql][:pass][:cinder]}';"
+     mysql -uroot -e"create database cinder;"
+
+     touch /etc/cinder/#{DONE_FLAG_FILE}
+  EOH
+end
+
+
+# put glance's config files
+template "/etc/cinder/api-paste.ini" do
+  source "cinder/api-paste.ini.erb"
+  owner "cinder"
+  group "cinder"
+end
+
+# put glance's config files
+template "/etc/cinder/cinder.conf" do
+  source "cinder/cinder.conf.erb"
+  owner "cinder"
+  group "cinder"
+end
+
+# db_initialize cinder
+script "db_initialize_cinder" do
+  DONE_FLAG_FILE="init.script.db_sync.done"
+  interpreter "bash"
+  user "root"
+  cwd "/tmp"
+  # this file is flag. if the file exist, the following script dont run.
+  creates "/etc/cinder/#{DONE_FLAG_FILE}"
+  code <<-EOH
+     cinder-manage db sync
+     touch /etc/cinder/#{DONE_FLAG_FILE}
+  EOH
+end
+
+
+%w{tgtd.service}.each do |service_name|
+  service service_name do
+    provider Chef::Provider::Service::Systemd
+    action [:enable, :start]
+  end
+end
+
+
+# enable & start cinder
+%w{openstack-cinder-api.service openstack-cinder-scheduler.service openstack-cinder-volume.service}.each do |service_name|
+  service service_name do
+    provider Chef::Provider::Service::Systemd
+    action [:enable, :start]
+  end
+end
+
+
+# _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+#                            nova
+# _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+
+
+# _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+#                            quantum
+# _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+
+
+# _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+#                            horizon
+# _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
