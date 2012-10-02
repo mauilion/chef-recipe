@@ -1,0 +1,94 @@
+[DEFAULT]
+logdir=/var/log/nova
+state_path=/var/lib/nova
+lock_path=/var/lib/nova/tmp
+
+dhcpbridge =/usr/bin/nova-dhcpbridge
+dhcpbridge_flagfile=/etc/nova/nova.conf
+force_dhcp_release=True
+injected_network_template=/usr/share/nova/interfaces.template
+libvirt_nonblocking=True
+libvirt_inject_partition=-1
+
+sql_connection=mysql://nova:nova@<%= node[:mysql][:listening_ip] %>/nova
+compute_driver=libvirt.LibvirtDriver
+firewall_driver=nova.virt.libvirt.firewall.IptablesFirewallDriver
+rpc_backend=nova.openstack.common.rpc.impl_qpid
+rootwrap_config=/etc/nova/rootwrap.conf
+libvirt_type=qemu
+verbose=True
+
+root_helper=sudo nova-rootwrap /etc/nova/rootwrap.conf
+multi_host=true
+send_arp_for_ha=true
+
+start_guests_on_host_boot=true
+resume_guests_state_on_host_boot=true
+
+#network
+#don't use quantum
+network_manager=nova.network.manager.FlatDHCPManager
+
+#use quantum
+#network_manager=nova.network.quantum.manager.QuantumManager
+#linuxnet_interface_driver=nova.network.linux_net.LinuxOVSInterfaceDriver
+#quantum_use_dhcp=True
+
+#use openvswitch plugin
+#libvirt_ovs_bridge=br-int
+#libvirt_vif_type=ethernet
+#libvirt_vif_driver=nova.virt.libvirt.vif.LibvirtOpenVswitchDriver
+
+libvirt_use_virtio_for_bridges=true
+
+public_interface=eth0
+flat_interface=eth1
+flat_network_bridge=br100
+fixed_range=10.0.0.0/8
+flat_network_dhcp_start=10.0.0.2
+network_size=255
+flat_injected=false
+use_ipv6=false
+
+novncproxy_base_url=http://192.168.128.31:6080/vnc_auto.html
+xvpvncproxy_base_url=http://192.168.128.31:6081/console
+#vnc compute node ip override
+vncserver_proxyclient_address=192.168.128.31
+vncserver_listen=192.168.128.31
+vnc_keymap=ja
+
+#scheduler
+scheduler_driver=nova.scheduler.simple.SimpleScheduler
+
+#object
+s3_host=localhost
+use_cow_images=yes
+
+#glance
+image_service=nova.image.glance.GlanceImageService
+glance_api_servers=localhost:9292
+
+qpid_hostname=localhost
+qpid_port=5672
+qpid_username=nova
+qpid_password=nova
+
+volume_api_class=nova.volume.cinder.API
+enabled_apis=ec2,osapi_compute,metadata
+
+#keystone
+auth_strategy=keystone
+keystone_ec2_url=http://localhost:5000/v2.0/ec2tokens
+
+#memcache
+memcached_servers=localhost:11211
+
+[keystone_authtoken]
+admin_tenant_name=service
+admin_user=nova
+admin_password=<%= node[:keystone][:password][:service] %>
+auth_host=127.0.0.1
+auth_port=35357
+auth_protocol=http
+signing_dirname=/tmp/keystone-signing-nova
+

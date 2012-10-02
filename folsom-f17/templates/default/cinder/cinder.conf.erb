@@ -7,7 +7,7 @@ iscsi_helper = tgtadm
 sql_connection = mysql://cinder:<%= node[:mysql][:pass][:cinder]%>@<%= node[:mysql][:listening_ip] %>/cinder
 rpc_backend = cinder.openstack.common.rpc.impl_qpid
 rootwrap_config = /etc/cinder/rootwrap.conf
-volume_group = opst-vol
+volume_group = openstack
 auth_strategy = keystone
 root_helper = sudo /usr/local/bin/cinder-rootwrap /etc/cinder/rootwrap.conf
 

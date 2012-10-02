@@ -7,14 +7,33 @@
 # All rights reserved - Do Not Redistribute
 #
 
+# disable iptables & selinux
+script "disable_iptables_and_selinux" do
+  interpreter "bash"
+  user "root"
+  cwd "/tmp"
+  # this file is flag. if the file exist, the following script dont run.
+  code <<-EOH
+     systemctl stop iptables.service
+     systemctl disable iptables.service
+     systemctl stop ip6tables.service
+     systemctl disable ip6tables.service
+     setenforce 0
+     sed -i s/SELINUX=enforcing/SELINUX=disabled/g /etc/selinux/config
+  EOH
+end
+
+
 # put repogitory file
 template "/etc/yum.repos.d/fedora-folsom.repo" do
   source "fedora-folsom.repo.erb"
 end
 
 # install fastestmirror
-package "yum-plugin-fastestmirror" do
-  action :install
+%w{yum-plugin-fastestmirror lvm2 less vim euca2ools }.each do |package_name|
+  package package_name do
+    action :install
+  end
 end
 
 # install kvm & libvirt
@@ -100,6 +119,16 @@ template "/etc/keystone/logging.conf" do
   owner "keystone"
   group "keystone"
 end
+
+script "chown_keystone" do
+  interpreter "bash"
+  user "root"
+  cwd "/tmp"
+  code <<-EOH
+     chown -R keystone:keystone /var/log/keystone
+  EOH
+end
+
 
 # enable & start keystone
 service "openstack-keystone.service" do
@@ -375,9 +404,18 @@ script "db_initialize_cinder" do
   EOH
 end
 
+script "chown_glance" do
+  interpreter "bash"
+  user "root"
+  cwd "/tmp"
+  code <<-EOH
+     chown -R glance:glance /var/log/glance /var/lib/glance
+  EOH
+end
+
 
 # enable & start glance
-%w{openstack-glance-api.service openstack-glance-api.service}.each do |service_name|
+%w{openstack-glance-api.service openstack-glance-registry.service}.each do |service_name|
   service service_name do
     provider Chef::Provider::Service::Systemd
     action [:enable, :start]
@@ -441,6 +479,31 @@ script "db_initialize_cinder" do
   EOH
 end
 
+script "chown_cinder" do
+  interpreter "bash"
+  user "root"
+  cwd "/tmp"
+  code <<-EOH
+     chown -R cinder:cinder /var/log/cinder /var/lib/cinder
+  EOH
+end
+
+file "/etc/tgt/conf.d/cinder.conf" do
+  action :delete
+end
+
+script "cinder_tgtd_bug_fix" do
+  DONE_FLAG_FILE="init.script.bug_fix.done"
+  interpreter "bash"
+  user "root"
+  cwd "/tmp"
+  creates "/etc/cinder/#{DONE_FLAG_FILE}"
+  code <<-EOH
+     sed -i '1iinclude /etc/cinder/volumes/*' /etc/tgt/targets.conf
+     touch /etc/cinder/#{DONE_FLAG_FILE}
+  EOH
+end
+
 
 %w{tgtd.service}.each do |service_name|
   service service_name do
@@ -463,12 +526,98 @@ end
 #                            nova
 # _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 
+# install nova
+package "openstack-nova" do
+  action :install
+end
 
-# _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-#                            quantum
-# _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+file "/etc/tgt/conf.d/nova.conf" do
+  action :delete
+end
+
+# create mysql's schema for nova
+script "create_mysql_schema_for_nova" do
+  DONE_FLAG_FILE="init.script.db_user_add.done"
+  interpreter "bash"
+  user "root"
+  cwd "/tmp"
+  # this file is flag. if the file exist, the following script dont run.
+  creates "/etc/nova/#{DONE_FLAG_FILE}"
+  code <<-EOH
+     mysql -uroot -e"grant all privileges on nova.* to nova@'#{node[:mysql][:access_network]}' identified by '#{node[:mysql][:pass][:nova]}';"
+     mysql -uroot -e"create database nova;"
+
+     touch /etc/nova/#{DONE_FLAG_FILE}
+  EOH
+end
+
+# put nova's config files
+template "/etc/nova/api-paste.ini" do
+  source "nova/api-paste.ini.erb"
+  owner "nova"
+  group "nova"
+end
+
+template "/etc/nova/nova.conf" do
+  source "nova/nova.conf.erb"
+  owner "nova"
+  group "nova"
+end
+
+# db_initialize nova
+script "db_initialize_nova" do
+  DONE_FLAG_FILE="init.script.db_sync.done"
+  interpreter "bash"
+  user "root"
+  cwd "/tmp"
+  # this file is flag. if the file exist, the following script dont run.
+  creates "/etc/nova/#{DONE_FLAG_FILE}"
+  code <<-EOH
+     nova-manage db sync
+     touch /etc/nova/#{DONE_FLAG_FILE}
+  EOH
+end
+
+script "chown_nova" do
+  interpreter "bash"
+  user "root"
+  cwd "/tmp"
+  code <<-EOH
+     chown -R nova:nova /var/log/nova /var/lib/nova
+  EOH
+end
+
+
+%w{libvirt-guests.service libvirtd.service}.each do |service_name|
+  service service_name do
+    provider Chef::Provider::Service::Systemd
+    action [:enable, :restart]
+  end
+end
+
+
+# enable & start nova
+%w{openstack-nova-api.service openstack-nova-scheduler.service openstack-nova-cert.service openstack-nova-console.service openstack-nova-consoleauth.service}.each do |service_name|
+  service service_name do
+    provider Chef::Provider::Service::Systemd
+    action [:enable, :restart]
+  end
+end
+
+%w{openstack-nova-compute.service openstack-nova-network.service openstack-nova-xvpvncproxy.service}.each do |service_name|
+  service service_name do
+    provider Chef::Provider::Service::Systemd
+    action [:enable, :restart]
+  end
+end
 
 
 # _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 #                            horizon
 # _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+
+
+# _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+#                            quantum
+# _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+
