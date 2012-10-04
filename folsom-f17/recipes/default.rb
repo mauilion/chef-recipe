@@ -103,19 +103,19 @@ end
 
 # put keystone's config files
 template "/etc/keystone/keystone.conf" do
-  source "keystone.conf.erb"
+  source "keystone/keystone.conf.erb"
   owner "keystone"
   group "keystone"
 end
 
 template "/etc/keystone/default_catalog.templates" do
-  source "default_catalog.templates.erb"
+  source "keystone/default_catalog.templates.erb"
   owner "keystone"
   group "keystone"
 end
 
 template "/etc/keystone/logging.conf" do
-  source "logging.conf.erb"
+  source "keystone/logging.conf.erb"
   owner "keystone"
   group "keystone"
 end
@@ -267,7 +267,7 @@ script "rsync enable" do
 end
 
 template "/etc/rsyncd.conf" do
-  source "rsyncd.conf.erb"
+  source "swift/rsyncd.conf.erb"
 end
 
 # start rsync & memcached
@@ -280,31 +280,31 @@ end
 
 # put conf files
 template "/etc/swift/account-server.conf" do
-  source "account-server.conf.erb"
+  source "swift/account-server.conf.erb"
   owner "swift"
   group "swift"
 end
 
 template "/etc/swift/container-server.conf" do
-  source "container-server.conf.erb"
+  source "swift/container-server.conf.erb"
   owner "swift"
   group "swift"
 end
 
 template "/etc/swift/object-server.conf" do
-  source "object-server.conf.erb"
+  source "swift/object-server.conf.erb"
   owner "swift"
   group "swift"
 end
 
 template "/etc/swift/proxy-server.conf" do
-  source "proxy-server.conf.erb"
+  source "swift/proxy-server.conf.erb"
   owner "swift"
   group "swift"
 end
 
 template "/etc/swift/swift.conf" do
-  source "swift.conf.erb"
+  source "swift/swift.conf.erb"
   owner "swift"
   group "swift"
 end
@@ -365,13 +365,13 @@ end
 
 # put glance's config files
 template "/etc/glance/glance-api.conf" do
-  source "glance-api.conf.erb"
+  source "glance/glance-api.conf.erb"
   owner "glance"
   group "glance"
 end
 
 template "/etc/glance/glance-api-paste.ini" do
-  source "glance-api-paste.ini.erb"
+  source "glance/glance-api-paste.ini.erb"
   owner "glance"
   group "glance"
 end
@@ -379,13 +379,13 @@ end
 
 # put glance's config files
 template "/etc/glance/glance-registry.conf" do
-  source "glance-registry.conf.erb"
+  source "glance/glance-registry.conf.erb"
   owner "glance"
   group "glance"
 end
 
 template "/etc/glance/glance-registry-paste.ini" do
-  source "glance-registry-paste.ini.erb"
+  source "glance/glance-registry-paste.ini.erb"
   owner "glance"
   group "glance"
 end
@@ -615,6 +615,33 @@ end
 # _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 #                            horizon
 # _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+
+# install horizon
+package "httpd" do
+  action :install
+end
+
+%w{openstack-dashboard python-django-horizon}.each do |package_name|
+  package package_name do
+    action :install
+  end
+end
+
+template "/etc/openstack-dashboard/local_settings" do
+  source "horizon/local_settings.erb"
+  owner "root"
+  group "root"
+  mode  "0644"
+end
+
+# start httpd
+%w{httpd.service}.each do |service_name|
+  service service_name do
+    provider Chef::Provider::Service::Systemd
+    action [:enable, :restart]
+  end
+end
+
 
 
 # _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

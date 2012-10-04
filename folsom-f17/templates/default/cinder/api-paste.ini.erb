@@ -48,4 +48,4 @@ auth_port = 35357
 auth_protocol = http
 admin_tenant_name = service
 admin_user = cinder
-admin_password = password
+admin_password = <%= node[:keystone][:password][:service] %>

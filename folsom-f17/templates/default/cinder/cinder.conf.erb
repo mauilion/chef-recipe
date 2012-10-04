@@ -15,7 +15,7 @@ root_helper = sudo /usr/local/bin/cinder-rootwrap /etc/cinder/rootwrap.conf
 [keystone_authtoken]
 admin_tenant_name = service
 admin_user = cinder
-admin_password = password
+admin_password = <%= node[:keystone][:password][:service] %>
 auth_host = 127.0.0.1
 auth_port = 35357
 auth_protocol = http
