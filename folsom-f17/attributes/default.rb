@@ -2,7 +2,7 @@
 default[:mysql][:listening_ip]    = "192.168.128.31"
 default[:mysql][:access_network]  = "192.168.128.%"
 default[:mysql][:pass][:keystone] = "keystone"
-default[:mysql][:pass][:glance]   = "glnace"
+default[:mysql][:pass][:glance]   = "glance"
 default[:mysql][:pass][:nova]     = "nova"
 default[:mysql][:pass][:cinder]   = "cinder"
 default[:mysql][:pass][:horizon]  = "horizon"

@@ -634,6 +634,23 @@ template "/etc/openstack-dashboard/local_settings" do
   mode  "0644"
 end
 
+# create mysql's schema for horizon
+script "create_mysql_schema_for_horizon" do
+  DONE_FLAG_FILE="init.script.db_user_add.done"
+  interpreter "bash"
+  user "root"
+  cwd "/tmp"
+  # this file is flag. if the file exist, the following script dont run.
+  creates "/etc/openstack-dashboard#{DONE_FLAG_FILE}"
+  code <<-EOH
+     mysql -uroot -e"grant all privileges on horizon.* to horizon@'#{node[:mysql][:access_network]}' identified by '#{node[:mysql][:pass][:horizon]}';"
+     mysql -uroot -e"create database horizon CHARACTER SET UTF8;;"
+
+     touch /etc/openstack-dashboard/#{DONE_FLAG_FILE}
+  EOH
+end
+
+
 # start httpd
 %w{httpd.service}.each do |service_name|
   service service_name do
@@ -641,6 +658,7 @@ end
     action [:enable, :restart]
   end
 end
+
 
 
 
