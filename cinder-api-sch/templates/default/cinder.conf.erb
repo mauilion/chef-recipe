@@ -1,0 +1,36 @@
+[DEFAULT]
+auth_strategy = keystone
+
+logdir = /var/log/cinder
+state_path = /var/lib/cinder
+lock_path = /var/lib/cinder/tmp
+volumes_dir = /etc/cinder/volumes
+
+sql_connection = mysql://cinder:<%= node[:mysql][:pass][:cinder]%>@<%= node[:mysql][:listening_ip] %>/cinder
+
+rpc_backend = cinder.openstack.common.rpc.impl_qpid
+qpid_hostname = <%= node[:qpid][:listening_ip] %>
+qpid_port = 5672
+qpid_password = noauth
+qpid_username = noauth
+qpid_reconnect=true
+
+rootwrap_config = /etc/cinder/rootwrap.conf
+root_helper = sudo /usr/local/bin/cinder-rootwrap /etc/cinder/rootwrap.conf
+
+quota_driver = cinder.quota.DbQuotaDriver
+scheduler_host_manager = cinder.scheduler.host_manager.HostManager
+scheduler_driver = cinder.scheduler.simple.SimpleScheduler
+volume_driver = cinder.volume.driver.ISCSIDriver
+
+
+[keystone_authtoken]
+admin_tenant_name = <%= node[:keystone][:tenant][:service][:name] %>
+admin_user = <%=        node[:keystone][:user][:cinder][:name] %>
+admin_password = <%=    node[:keystone][:user][:cinder][:pass] %>
+auth_host = <%=         node[:keystone][:identity_api_address][:internalURL] %>
+auth_port = 35357
+auth_protocol = http
+signing_dirname = /tmp/keystone-signing-cinder
+
+
